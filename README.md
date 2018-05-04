@@ -43,4 +43,4 @@ README.md:27
               stage.
               
 # Run
-./main.py path=~/data/odu/TwitterClassifier/data/Conversations path_tweet=~/data/odu/TwitterClassifier/data/tweetsVMP profile_path=~/data/odu/TwitterClassifier/data/AccountProfile/ 
+./main.py path=/data/odu/TwitterClassifier/data/Conversations path_tweet=/data/odu/TwitterClassifier/data/tweetsVMP profile_path=/data/odu/TwitterClassifier/data/AccountProfile/ 
