@@ -1,0 +1,2 @@
+2018-05-04T11-35-28
+genericCommon.py, 1179, (<class 'BrokenPipeError'>, BrokenPipeError(32, 'Broken pipe'), <traceback object at 0x7fcf2d049c48>)
