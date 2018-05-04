@@ -9,14 +9,14 @@ extension. For example: If President Barack Obama is one of the VMPs, his tweet 
 identified as barackobama.twt.gz
 
 ## Installation
-* git clonehttps://github.com/phvargas/CollectConversations.git
+* git clone https://github.com/phvargas/CollectConversations.git
 
 ## Pre-requisites
 * Python3
 * A folder with a set of files containing a collection of tweets sent by VMPs.
 
 # Parameters
-* **path**: path to the file name where capture conversations will be stored.
+* **path**: path to the file name where the captured conversations will be stored.
   This is a **MANDATORY** parameter.
 
 * **tweet_path**: path of folder where VMPs tweet collection are stored. This is a **MANDATORY** 
@@ -29,7 +29,7 @@ parameter.
 * **part**: this parameter is an optional. If provided, the list of interacting Twitter accounts will be broken in (n)
            parts. The parameter has the format d1-d2. Where d2 is an integer that represents the number of parts the list
            will be broken into. While d1 is the section that will be inspected.
-
+README.md:27
            Ex: A conversation containing 100 handles could be broken in two pieces. Then, passing the parameter
                part=1-2 indicates that the running instance will work with elements 0-49. Another instance could run
                concurrently (part=2-2) to work elements 50-100.
@@ -41,3 +41,6 @@ parameter.
               A decision should be made if re-writing all previous conversations or skipping the ones already recorded. 
               The latter will speed-up the new process if the interruption occurred in an advanced
               stage.
+              
+# Run
+./main.py path=~/data/odu/TwitterClassifier/data/Conversations path_tweet=~/data/odu/TwitterClassifier/data/tweetsVMP profile_path=~/data/odu/TwitterClassifier/data/AccountProfile/ 
