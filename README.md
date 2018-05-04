@@ -16,7 +16,7 @@ identified as barackobama.twt.gz
 ## Pre-requisites
 * Python3
 * A folder with a set of files containing a collection of tweets sent by VMPs.
-* Database must be available to manage the Twitter accounts profile creation process. See
+* Database must be available to manage the Twitter accounts profile creation process. See https://github.com/phvargas/ResetTwitterDB.git
 
 # Parameters
 * **path**: path to the file name where the captured conversations will be stored.
