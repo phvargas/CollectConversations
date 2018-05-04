@@ -34,6 +34,10 @@ parameter.
                part=1-2 indicates that the running instance will work with elements 0-49. Another instance could run
                concurrently (part=2-2) to work elements 50-100.
 
-**rewrite**: this parameter is an optional. It has a boolean value (True or False).
-              The default value of this parameter is TRUE. If the values is FALSE and a conversation was recorded then 
-              the script will load the file and it will skip any conversation that was included in the file.
+* **rewrite**: this parameter is optional.  Its value type is boolean (True or False). If omitted
+              the default value is TRUE. If this parameter is set to
+              False, any previous recorded conversation-id(s) will be skipped. This functionality is
+              helpful in case a process gets interrupted, and it needs to re-start for completion. 
+              A decision should be made if re-writing all previous conversations or skipping the ones already recorded. 
+              The latter will speed-up the new process if the interruption occurred in an advanced
+              stage.
