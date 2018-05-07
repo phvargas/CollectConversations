@@ -1075,7 +1075,7 @@ def extractVideoLinkFromTweet(tweetURI, driver=None):
 
 	
 
-def extractTweetsFromSearch(query='', uri='', maxTweetCount=100, chromedriverPath='/home/hamar/data/odu/TwitterClassifier/collectConversations/chromedriver', latestVerticalFlag=False):
+def extractTweetsFromSearch(query='', uri='', maxTweetCount=100, chromedriverPath='/home/pvargas/TwitterHarassment/CollectConversations/chromedriver', latestVerticalFlag=False):
 
 	query = query.strip()
 	uri = uri.strip()
@@ -1104,7 +1104,7 @@ def extractTweetsFromSearch(query='', uri='', maxTweetCount=100, chromedriverPat
 	
 	return finalTweetsColDict
 
-def extractTweetsFromTweetURI(tweetConvURI, tweetConvMaxTweetCount=100, noMoreTweetCounter=0, chromedriverPath='/home/hamar/data/odu/TwitterClassifier/collectConversations/chromedriver'):
+def extractTweetsFromTweetURI(tweetConvURI, tweetConvMaxTweetCount=100, noMoreTweetCounter=0, chromedriverPath='/home/pvargas/TwitterHarassment/CollectConversations/chromedriver'):
 	#patched use of Chrome with:https://archive.is/94Idt
 	from selenium import webdriver
 
@@ -1347,7 +1347,7 @@ def isTweetPresent(soup):
 
 	return ''
 
-def isURIInTweet(link, driver=None, closeBrowserFlag=True, chromedriverPath='/home/hamar/data/odu/TwitterClassifier/collectConversations/chromedriver'):
+def isURIInTweet(link, driver=None, closeBrowserFlag=True, chromedriverPath='/home/pvargas/TwitterHarassment/CollectConversations/chromedriver'):
 
 	print('\nisURIInTweet()')
 
