@@ -5,7 +5,7 @@
 conversations are the result of responses made by other Twitter accounts to tweets previously sent by VMPs. The original
  tweets from the VMPs MUST be previously stored in a compressed file (gzip) using a JSON format. 
 
-* VMPs' Twitter file names are identified by the username and separated by a dot (.) from the file
+* VMPs' Twitter file names are identified by the username  separated by a dot (.) from the file
 extension. For example: If President Barack Obama is one of the VMPs, his tweet collection file name will be
 identified as barackobama.twt.gz
 

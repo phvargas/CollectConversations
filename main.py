@@ -4,6 +4,8 @@ from Conversation import Conversation
 from time import strftime
 from collectConversations import genericCommon as extractor
 import Utilities.ConvertDataType as conv
+from twitter_apps.Keys import get_password
+import psycopg2
 import requests
 import sys
 import os
@@ -17,7 +19,17 @@ def main(**kwarg):
     local_date = strftime("_%Y%m%d.html.gz")
     root_url = 'https://twitter.com/'
 
-    vmp_accounts = os.listdir(kwarg['path_tweet'])
+    db_account = kwarg['user']
+    password = get_password(db_account)
+    db = kwarg['db']
+
+    print('\nMaking connection to <<{}>> DB ...'.format(db))
+    dsn = "host={} dbname={} user={} password={}".format('localhost', db, db_account, password)
+    conn = psycopg2.connect(dsn)
+    cur = conn.cursor()
+    print('Connection successful ...')
+
+    vmp_accounts = os.listdir(kwarg['tweet_path'])
     for k, account in enumerate(vmp_accounts):
         account = account.split('.')
         vmp_accounts[k] = account[0]
@@ -72,11 +84,18 @@ def main(**kwarg):
             try:
                 for tweet_in in old_conversation.handle_conversations_id(handle):
                     conversations_idx.add(int(tweet_in))
+                    sql = 'SELECT id, status FROM conversations WHERE id = \'{}\';'.format(tweet_in)
+                    cur.execute(sql)
+                    idx, status = cur.fetchone()
+                    if not idx:
+                        sql = 'INSERT INTO conversations (id, status) VALUES (\'{}\', {});'.format(tweet_in, 0)
+                        cur.execute(sql)
+                        conn.commit()
             except KeyError:
-                "No conversations was recorded for current handle"
+                "No conversations were recorded for current handle"
                 pass
 
-            with gzip.open(kwarg['path_tweet'] + handle + '.twt.gz', mode='rb') as tweetIDFile:
+            with gzip.open(kwarg['tweet_path'] + handle + '.twt.gz', mode='rb') as tweetIDFile:
                 for records in tweetIDFile.read().decode('utf-8').split("\n"):
                     if records:
                         tweets = json.loads(records)
@@ -102,11 +121,25 @@ def main(**kwarg):
                 outFile.write("\n")
 
         for tweetID in vmp_tweetsID:
+            sql = 'SELECT id, status FROM conversations WHERE id = \'{}\';'.format(tweetID)
+            cur.execute(sql)
+
+            counter = -1
+            for counter, idx, status in enumerate(cur):
+                break
+
+            if counter < 0:
+                sql = 'INSERT INTO conversations (id, status) VALUES (\'{}\', {});'.format(tweetID, 1)
+                print(sql)
+                cur.execute(sql)
+                conn.commit()
+
             if tweetID not in conversations_idx:
                 print('Extracting conversation-id: {}'.format(tweetID))
                 url = baseURL + str(tweetID)
                 convoDict = extractor.extractTweetsFromTweetURI(tweetConvURI=url)
                 outFile.write(json.dumps(convoDict))
+
                 tmp_file = '/tmp/' + str(tweetID) + '.tmp'
                 f = open(tmp_file, mode='w')
                 f.write('{}\n'.format(json.dumps(convoDict)))
@@ -115,8 +148,7 @@ def main(**kwarg):
 
                 handle_files = os.listdir(kwarg['profile_path'])
                 for k, handle in enumerate(handle_files):
-                    side = handle.split('_')
-                    handle_files[k] = side[0]
+                    handle_files[k] = handle[:handle.rfind('_')]
 
                 handle_files = set(handle_files)
 
@@ -157,7 +189,11 @@ if __name__ == '__main__':
 
     :profile_pah: path of folder where interacting profiles will be stored. This is a MANDATORY parameter.
 
-
+           
+    :db: name of database in use
+    
+    :user: user which has access to database.
+    
     :part: this is an optional parameter. If provided, the list of interacting Twitter accounts will be broken in (n)
            parts. The parameter has the format d1-d2. Where d2 is an integer that represents the number of parts the list
            will be broken into. While d1 is the section that will be inspected.
@@ -173,27 +209,27 @@ if __name__ == '__main__':
     running example: ./main.py part=1-10 path=data/verifiedUserDataset/ 
                      del_path=data/DeletedSuspendedAccounts/ profile_path=data/AccountProfiles/
     """
-    if len(sys.argv) < 4:
+    if len(sys.argv) < 6:
         print('\nNot enough arguments..', file=sys.stderr)
-        print('File where conversations are contained is required ...', file=sys.stderr)
-        print('Usage: python3 getTweetConvos.py path=path-to-conversations path_tweet=path-where-tweets-reside' +
+        print('Usage: ./main.py path=path-to-conversations tweet_path=path-where-tweets-reside' +
               ' profile_path=path-to-profile-folder>', file=sys.stderr)
         sys.exit(-1)
 
     params = conv.list2kwarg(sys.argv[1:])
 
-    if 'path' not in params or 'path_tweet' not in params or 'profile_path' not in params:
-        print('\npath, profile_path, and path_tweet are MANDATORY parameters', file=sys.stderr)
-        print('Usage: python3 getTweetConvos.py path=path-to-conversations path_tweet=path-where-tweets-reside' +
-              ' profile_path="path-to-profile-folder>', file=sys.stderr)
+    if 'path' not in params or 'tweet_path' not in params or 'profile_path' not in params or 'db' not in params or \
+       'user' not in params:
+        print('\npath, profile_path, and tweet_path are MANDATORY parameters', file=sys.stderr)
+        print('Usage: ./main.py path=path-to-conversations tweet_path=path-where-tweets-reside db=database-name ' +
+              'user=database-user profile_path="path-to-profile-folder>', file=sys.stderr)
         sys.exit(-1)
 
     if not os.path.isdir(params['path']):
         print('\nCould not find folder where conversation will be stored: {}'.format(params['path']), file=sys.stderr)
         sys.exit(-1)
 
-    if not os.path.isdir(params['path_tweet']):
-        print('\nCould not find folder where VMPs tweets reside: {}'.format(params['path_tweet']), file=sys.stderr)
+    if not os.path.isdir(params['tweet_path']):
+        print('\nCould not find folder where VMPs tweets reside: {}'.format(params['tweet_path']), file=sys.stderr)
         sys.exit(-1)
 
     if not os.path.isdir(params['profile_path']):
@@ -202,8 +238,8 @@ if __name__ == '__main__':
         sys.exit(-1)
 
     # add / to end of folder path if not given
-    if params['path_tweet'][-1] != '/':
-        params['path_tweet'] = params['path_tweet'] + '/'
+    if params['tweet_path'][-1] != '/':
+        params['tweet_path'] = params['tweet_path'] + '/'
 
     if params['profile_path'][-1] != '/':
         params['profile_path'] = params['profile_path'] + '/'
