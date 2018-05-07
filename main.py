@@ -3,6 +3,7 @@ from Utilities.FilePartition import make_partition, get_partition_range
 from Conversation import Conversation
 from time import strftime
 from collectConversations import genericCommon as extractor
+from Utilities.ProgressBar import display_progress_bar
 import Utilities.ConvertDataType as conv
 from twitter_apps.Keys import get_password
 import psycopg2
@@ -73,8 +74,23 @@ def main(**kwarg):
     old_conversation = Conversation(conversation_file)
 
     print('Conversation will be recorded at: {}'.format(conversation_file))
-
     print('Capturing conversations from the Twitter VMP account {:,} to {:,} ...'.format(start + 1, end))
+    print('\nObtaining available profiles ...')
+
+    handle_files = os.listdir(kwarg['profile_path'])
+    num_profiles = len(handle_files)
+    for k, handle in enumerate(handle_files):
+        display_progress_bar(25, k / num_profiles)
+        handle_files[k] = handle[:handle.rfind('_')]
+        sql = 'SELECT handle, status FROM profiles WHERE handle = \'{}\';'.format(handle_files[k])
+        cur.execute(sql)
+        if cur.rowcount < 1:
+            sql = 'INSERT INTO profiles (handle, status) VALUES (\'{}\', {});'.format(handle_files[k], 2)
+            cur.execute(sql)
+            conn.commit()
+
+    print('\nFound {:,} profiles'.format(num_profiles))
+    del handle_files
 
     conversations_idx = set()
     vmp_tweetsID = []
@@ -86,8 +102,7 @@ def main(**kwarg):
                     conversations_idx.add(int(tweet_in))
                     sql = 'SELECT id, status FROM conversations WHERE id = \'{}\';'.format(tweet_in)
                     cur.execute(sql)
-                    idx, status = cur.fetchone()
-                    if not idx:
+                    if cur.rowcount < 1:
                         sql = 'INSERT INTO conversations (id, status) VALUES (\'{}\', {});'.format(tweet_in, 0)
                         cur.execute(sql)
                         conn.commit()
@@ -123,14 +138,8 @@ def main(**kwarg):
         for tweetID in vmp_tweetsID:
             sql = 'SELECT id, status FROM conversations WHERE id = \'{}\';'.format(tweetID)
             cur.execute(sql)
-
-            counter = -1
-            for counter, idx, status in enumerate(cur):
-                break
-
-            if counter < 0:
+            if cur.rowcount < 1:
                 sql = 'INSERT INTO conversations (id, status) VALUES (\'{}\', {});'.format(tweetID, 1)
-                print(sql)
                 cur.execute(sql)
                 conn.commit()
 
@@ -146,14 +155,14 @@ def main(**kwarg):
                 f.close()
                 capture_conv = Conversation(tmp_file)
 
-                handle_files = os.listdir(kwarg['profile_path'])
-                for k, handle in enumerate(handle_files):
-                    handle_files[k] = handle[:handle.rfind('_')]
-
-                handle_files = set(handle_files)
-
                 for handle in capture_conv.all_conversation_elements_set():
-                    if handle not in handle_files:
+                    sql = 'SELECT handle, status FROM profiles WHERE handle = \'{}\';'.format(handle)
+                    cur.execute(sql)
+                    if cur.rowcount < 1:
+                        sql = 'INSERT INTO profiles (handle, status) VALUES (\'{}\', {});'.format(handle, 1)
+                        cur.execute(sql)
+                        conn.commit()
+
                         profile_url = root_url + handle
                         print('Getting profile for Twitter account: {}'.format(profile_url))
                         r = requests.get(profile_url)
@@ -170,11 +179,20 @@ def main(**kwarg):
                             print('\tAccount was deleted ...')
                         else:
                             print('\tEncountered unanticipated exception. Status:'.format(r.status_code))
+
+                        sql = 'UPDATE profiles SET status = 2 WHERE handle = \'{}\';'.format(handle)
+                        cur.execute(sql)
+                        conn.commit()
+
                     else:
                         print('Skipping account {}. Already on file...'.format(handle))
 
                 os.remove(tmp_file)
                 outFile.write("\n")
+
+                sql = 'UPDATE conversations SET status = 2 WHERE id = \'{}\';'.format(tweetID)
+                cur.execute(sql)
+                conn.commit()
             else:
                 print('Skipping conversation-id: {} ...'.format(tweetID))
 
@@ -211,8 +229,8 @@ if __name__ == '__main__':
     """
     if len(sys.argv) < 6:
         print('\nNot enough arguments..', file=sys.stderr)
-        print('Usage: ./main.py path=path-to-conversations tweet_path=path-where-tweets-reside' +
-              ' profile_path=path-to-profile-folder>', file=sys.stderr)
+        print('Usage: ./main.py path=path-to-conversations tweet_path=path-where-tweets-reside db=database-name ' +
+              'user=database-user profile_path="path-to-profile-folder>', file=sys.stderr)
         sys.exit(-1)
 
     params = conv.list2kwarg(sys.argv[1:])
